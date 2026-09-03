@@ -19,6 +19,12 @@ RUN git apply /tmp/go2rtc-hevc-ap.patch \
     && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /go2rtc .
 
 FROM ${BUILD_FROM}
+# go2rtc spawns ffmpeg for any "ffmpeg:" source, which is how Home Assistant
+# wraps RTSP cameras. The Home Assistant base image ships no ffmpeg, so install
+# it. This is Alpine's software ffmpeg (no hardware acceleration, unlike the
+# official go2rtc image), which is sufficient for the copy/repackage and Opus
+# audio that the ffmpeg-wrapped sources use.
+RUN apk add --no-cache ffmpeg
 COPY --from=build /go2rtc /usr/local/bin/go2rtc
 COPY rootfs /
 RUN chmod +x /etc/s6-overlay/s6-rc.d/go2rtc/run
